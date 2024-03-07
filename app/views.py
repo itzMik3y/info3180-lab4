@@ -7,11 +7,15 @@ from app.models import UserProfile
 from app.forms import LoginForm
 from app.forms import UploadForm
 from werkzeug.security import check_password_hash
-
+from flask import send_from_directory
 
 ###
 # Routing for your application.
 ###
+def get_uploaded_image():
+    uploads_dir = os.path.join(app.config['UPLOAD_FOLDER'])
+    uploaded_images = [f for f in os.listdir(uploads_dir) if os.path.isfile(os.path.join(uploads_dir, f))]
+    return uploaded_images
 
 @app.route('/')
 def home():
@@ -40,6 +44,9 @@ def upload():
 
     return render_template('upload.html', form=form)
 
+@app.route('/uploads/<filename>')
+def get_image(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -102,3 +109,9 @@ def add_header(response):
 def page_not_found(error):
     """Custom 404 page."""
     return render_template('404.html'), 404
+
+@app.route('/files')
+@login_required
+def files():
+    images = get_uploaded_image()
+    return render_template('files.html', images= images)
