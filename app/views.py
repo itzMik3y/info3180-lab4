@@ -5,6 +5,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from app.models import UserProfile
 from app.forms import LoginForm
+from app.forms import UploadForm
 from werkzeug.security import check_password_hash
 
 
@@ -25,17 +26,19 @@ def about():
 
 
 @app.route('/upload', methods=['POST', 'GET'])
+@login_required
 def upload():
-    # Instantiate your form class
+    form = UploadForm()
 
-    # Validate file upload on submit
     if form.validate_on_submit():
-        # Get file data and save to your uploads folder
+        f = form.image.data
+        filename = secure_filename(f.filename)
+        f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
         flash('File Saved', 'success')
-        return redirect(url_for('home')) # Update this to redirect the user to a route that displays all uploaded image files
+        return redirect(url_for('home'))  # or some route where you display images
 
-    return render_template('upload.html')
+    return render_template('upload.html', form=form)
 
 
 
@@ -48,7 +51,7 @@ def login():
         user = UserProfile.query.filter_by(username=form.username.data).first()
 
         # Check the password
-        if user and check_password_hash(user.password_hash, form.password.data):
+        if user and check_password_hash(user.password, form.password.data):
             login_user(user)
             flash('Logged in successfully!', 'success')
             return redirect(url_for('upload'))
